@@ -625,7 +625,7 @@ window.BookProApp = {
                     <h3 class="text-center" style="margin-bottom: 1.5rem;">🔐 Admin Login</h3>
                     <form onsubmit="event.preventDefault(); const p = document.getElementById('admin-pass').value; if(window.BookProAdmin.login(p)){ window.BookProApp.renderAdmin(); document.getElementById('admin-logout-btn').style.display='inline-flex'; } else { window.BookProApp.showToast('Invalid password', 'error'); }">
                         <div class="form-group">
-                            <label class="form-label">Password <span style='color:var(--text-muted);font-size:0.85em;'>(hint: admin123)</span></label>
+                            <label class="form-label">Password</label>
                             <input type="password" id="admin-pass" class="form-input" required placeholder="Enter admin password">
                         </div>
                         <button type="submit" class="btn btn-primary btn-full" style="margin-top: 1rem;">Login</button>

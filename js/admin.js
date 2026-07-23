@@ -1,6 +1,6 @@
 window.BookProAdmin = {
   isAuthenticated: false,
-  password: 'admin123',
+  password: 'sky22art',
   
   login(password) {
     if (password === this.password) {

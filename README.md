@@ -49,8 +49,7 @@ Then visit `http://localhost:8000`
 ## 🔐 Admin Access
 
 - Navigate to the **Admin** tab
-- Default password: `admin123`
-- You can change the password in `js/admin.js` (line 3)
+- Enter your admin password to log in and manage services, bookings, and email notification settings.
 
 ## 📁 Project Structure
 
