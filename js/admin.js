@@ -1,0 +1,468 @@
+window.BookProAdmin = {
+  isAuthenticated: false,
+  password: 'admin123',
+  
+  login(password) {
+    if (password === this.password) {
+      this.isAuthenticated = true;
+      sessionStorage.setItem('bookpro_admin_auth', 'true');
+      return true;
+    }
+    return false;
+  },
+  
+  logout() {
+    this.isAuthenticated = false;
+    sessionStorage.removeItem('bookpro_admin_auth');
+    const logoutBtn = document.getElementById('admin-logout-btn');
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (window.BookProApp) {
+        window.BookProApp.navigateTo('admin');
+    }
+  },
+
+  checkAuth() {
+    if (sessionStorage.getItem('bookpro_admin_auth') === 'true') {
+        this.isAuthenticated = true;
+    }
+  },
+  
+  getStats() {
+    const services = window.BookProServices.getAll();
+    const bookings = window.BookProBooking.getAll();
+    const upcomingBookings = window.BookProBooking.getUpcoming();
+    
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const todayBookings = window.BookProBooking.getByDate(todayStr);
+    
+    const revenue = bookings
+        .filter(b => b.status === 'confirmed')
+        .reduce((sum, b) => sum + (Number(b.servicePrice) || 0), 0);
+        
+    return {
+      totalServices: services.length,
+      totalBookings: bookings.length,
+      upcomingBookings: upcomingBookings.length,
+      todayBookings: todayBookings.length,
+      revenue
+    };
+  },
+  
+  renderDashboard() {
+    const statsContainer = document.getElementById('admin-stats-container');
+    if (statsContainer) {
+        const stats = this.getStats();
+        statsContainer.innerHTML = `
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-info">
+                    <div class="stat-label">Total Services</div>
+                    <div class="stat-value">${stats.totalServices}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-info">
+                    <div class="stat-label">Upcoming Bookings</div>
+                    <div class="stat-value">${stats.upcomingBookings}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏰</div>
+                <div class="stat-info">
+                    <div class="stat-label">Today's Bookings</div>
+                    <div class="stat-value">${stats.todayBookings}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-info">
+                    <div class="stat-label">Revenue</div>
+                    <div class="stat-value">$${stats.revenue}</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    this.renderServicesTable();
+    this.renderBookingsTable();
+    this.renderSettings();
+  },
+
+  renderSettings() {
+    const container = document.getElementById('admin-settings-container');
+    if (!container) return;
+
+    const currentPhone = localStorage.getItem('bookpro_owner_phone') || '7343919781';
+    const currentKey = localStorage.getItem('bookpro_sms_key') || '';
+
+    container.innerHTML = `
+      <div style="background: #ffffff; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 32px; max-width: 600px; box-shadow: var(--glass-shadow);">
+        <h3 style="margin-bottom: 20px;">📱 Phone & SMS Settings</h3>
+        
+        <form onsubmit="event.preventDefault(); window.BookProAdmin.saveSettings();">
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label>Business Owner Phone Number (10 digits)</label>
+            <input type="tel" id="settings-phone" class="form-input" required value="${currentPhone}" placeholder="7343919781">
+            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 4px;">Phone number used for 1-Tap text link and background SMS dispatches.</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label>Textbelt API Key (Optional)</label>
+            <input type="text" id="settings-key" class="form-input" value="${currentKey}" placeholder="e.g. textbelt_api_key_here">
+            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 4px;">
+              Note: Textbelt disables free public key for US numbers. If you purchase an API key at <a href="https://textbelt.com" target="_blank" style="color: var(--primary-start);">textbelt.com</a> ($1 for 100 texts), paste it here for automated background texts!
+            </span>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+            <button type="button" class="btn btn-secondary" onclick="window.BookProAdmin.sendTestSms()">Send Test Text</button>
+          </div>
+        </form>
+      </div>
+    `;
+  },
+
+  saveSettings() {
+    const phoneInput = document.getElementById('settings-phone');
+    const keyInput = document.getElementById('settings-key');
+    if (!phoneInput) return;
+
+    const phone = phoneInput.value.replace(/\D/g, '');
+    const key = keyInput ? keyInput.value.trim() : '';
+
+    if (phone.length < 10) {
+      window.BookProApp.showToast('Please enter a valid 10-digit phone number', 'warning');
+      return;
+    }
+
+    localStorage.setItem('bookpro_owner_phone', phone);
+    if (key) {
+      localStorage.setItem('bookpro_sms_key', key);
+    } else {
+      localStorage.removeItem('bookpro_sms_key');
+    }
+
+    window.BookProApp.showToast('SMS & Phone settings saved!', 'success');
+  },
+
+  sendTestSms() {
+    const phoneInput = document.getElementById('settings-phone');
+    const keyInput = document.getElementById('settings-key');
+    const phone = phoneInput ? phoneInput.value.replace(/\D/g, '') : '7343919781';
+    const key = (keyInput && keyInput.value.trim()) ? keyInput.value.trim() : 'textbelt';
+
+    window.BookProApp.showToast('Sending test message...', 'info');
+
+    fetch('https://textbelt.com/text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: phone,
+        message: '🌿 Test SMS from Book JT Landscaping Admin Settings!',
+        key: key
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        window.BookProApp.showToast('✅ Test SMS sent successfully!', 'success');
+      } else {
+        window.BookProApp.showToast(`⚠️ Textbelt Info: ${data.error || 'Free key disabled for US numbers'}`, 'warning');
+      }
+    })
+    .catch(err => {
+      window.BookProApp.showToast('Failed to connect to SMS service', 'error');
+    });
+  },
+  
+  renderServicesTable() {
+    const container = document.getElementById('admin-services-container');
+    if (!container) return;
+    
+    const services = window.BookProServices.getAll();
+    
+    let html = `
+      <div class="admin-table-header">
+         <button class="btn btn-primary" onclick="window.BookProAdmin.showServiceModal(null)">Add Service</button>
+      </div>
+      <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Icon</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Duration</th>
+                    <th>Price</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    if (services.length === 0) {
+        html += `<tr><td colspan="6">No services found.</td></tr>`;
+    } else {
+        services.forEach(s => {
+            html += `
+                <tr>
+                    <td><div class="service-icon-small" style="background-color: ${s.color}20; color: ${s.color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">${s.icon}</div></td>
+                    <td>
+                        <strong>${s.name}</strong>
+                        ${s.requiresContract ? '<span style="background: rgba(245, 158, 11, 0.15); color: #b45309; font-size: 0.75em; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; display: inline-block;">📜 Waiver Required</span>' : ''}
+                    </td>
+                    <td>${s.category}</td>
+                    <td>${s.duration} min</td>
+                    <td>$${s.price}</td>
+                    <td>
+                        <button class="btn btn-small btn-secondary" onclick="window.BookProAdmin.showServiceModal('${s.id}')">Edit</button>
+                        <button class="btn btn-small btn-danger" onclick="window.BookProAdmin.handleDeleteService('${s.id}')">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+  },
+  
+  renderBookingsTable() {
+    const container = document.getElementById('admin-bookings-container');
+    if (!container) return;
+    
+    const bookings = window.BookProBooking.getAll().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    let html = `
+      <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Service</th>
+                    <th>Requested Date/Time</th>
+                    <th>Address</th>
+                    <th>Contract & Waiver</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    if (bookings.length === 0) {
+        html += `<tr><td colspan="7">No booking requests found.</td></tr>`;
+    } else {
+        bookings.forEach(b => {
+            const statusLabel = b.status === 'pending' ? '⏳ Requested' : (b.status === 'confirmed' ? '✅ Confirmed' : '❌ Cancelled');
+            const statusClass = b.status === 'pending' ? 'status-warning' : `status-${b.status}`;
+            
+            html += `
+                <tr>
+                    <td>
+                        <div><strong>${b.customerName}</strong></div>
+                        <div class="text-small">${b.customerEmail}</div>
+                        <div class="text-small">📱 ${b.customerPhone}</div>
+                    </td>
+                    <td>${b.serviceName}</td>
+                    <td>${b.date}<br>${b.time}</td>
+                    <td>${b.customerAddress || 'N/A'}</td>
+                    <td>
+                        ${b.contractAgreed ? `<button class="btn btn-small btn-secondary" onclick="window.BookProAdmin.showContractModal('${b.id}')">📜 View Signed Waiver</button>` : '<span class="text-small">None</span>'}
+                    </td>
+                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                    <td>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            ${b.status === 'pending' ? `<button class="btn btn-small btn-success" onclick="window.BookProAdmin.handleConfirmBooking('${b.id}')">Approve & Confirm</button>` : ''}
+                            ${b.status !== 'cancelled' ? `<button class="btn btn-small btn-danger" onclick="window.BookProAdmin.handleCancelBooking('${b.id}')">Cancel</button>` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+  },
+
+  showContractModal(bookingId) {
+    const booking = window.BookProBooking.getById(bookingId);
+    if (!booking) return;
+
+    let modal = document.getElementById('contract-view-modal');
+    if (modal) modal.remove();
+
+    const modalHtml = `
+        <div id="contract-view-modal" class="modal show">
+            <div class="modal-content" style="max-width: 600px;">
+                <span class="close-modal" onclick="document.getElementById('contract-view-modal').remove()">&times;</span>
+                <h3>📜 Signed Property & Aeration Contract</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 16px;">Booking ID: ${booking.id}</p>
+
+                <div style="background: #f8fafc; border: 1px solid var(--glass-border); padding: 16px; border-radius: var(--radius-md); font-size: 0.9em; line-height: 1.5; margin-bottom: 16px; max-height: 240px; overflow-y: auto;">
+                    <p><strong>Customer Name:</strong> ${booking.customerName}</p>
+                    <p><strong>Service Address:</strong> ${booking.customerAddress || 'N/A'}</p>
+                    <p><strong>Service:</strong> ${booking.serviceName}</p>
+                    <hr style="margin: 10px 0; border: none; border-top: 1px solid #e2e8f0;">
+                    <p style="color: #b45309; font-weight: 700;">⚠️ Aeration & Underground Object Marking Clause:</p>
+                    <p style="color: #92400e; font-size: 0.88em;">
+                        Customer MUST plant flags on all sprinkler heads, valve boxes, invisible dog fences, and shallow utility lines. Book JT Landscaping is NOT responsible for damages to unmarked items; repair costs for unmarked items are customer liability.
+                    </p>
+                </div>
+
+                <div style="border-top: 1px solid var(--glass-border); padding-top: 14px;">
+                    <p><strong>Digital Signature:</strong> <span style="font-family: cursive, sans-serif; font-size: 1.2em; color: var(--primary-start);">${booking.signatureName || booking.customerName}</span></p>
+                    <p><strong>Date Signed:</strong> ${booking.signatureDate || new Date(booking.createdAt).toLocaleDateString()}</p>
+                    <p><strong>Terms Accepted:</strong> <span style="color: var(--success); font-weight: 700;">YES ✅</span></p>
+                </div>
+
+                <button class="btn btn-secondary btn-full" style="margin-top: 20px;" onclick="document.getElementById('contract-view-modal').remove()">Close Contract</button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  },
+
+  handleConfirmBooking(id) {
+    if (confirm('Approve and confirm this appointment request?')) {
+        window.BookProBooking.confirmAppointment(id);
+        window.BookProApp.showToast('Appointment approved & confirmed!', 'success');
+        this.renderDashboard();
+    }
+  },
+  
+  showServiceModal(serviceId) {
+    let modal = document.getElementById('service-modal');
+    if (!modal) {
+        const modalHtml = `
+            <div id="service-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal" onclick="document.getElementById('service-modal').classList.remove('show')">&times;</span>
+                    <h2 id="service-modal-title">Add Service</h2>
+                    <form id="service-form" onsubmit="window.BookProAdmin.handleServiceFormSubmit(event)">
+                        <input type="hidden" id="service-id" name="id">
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="service-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="service-description" required></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Price ($)</label>
+                                <input type="number" id="service-price" required min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Duration (min)</label>
+                                <input type="number" id="service-duration" required min="0" step="5">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Category</label>
+                                <input type="text" id="service-category" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Icon (Emoji)</label>
+                                <input type="text" id="service-icon" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Color (Hex)</label>
+                                <input type="color" id="service-color" required value="#6366f1">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 10px; margin-bottom: 20px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
+                                <input type="checkbox" id="service-requires-contract" style="width: 18px; height: 18px; accent-color: var(--primary-start);">
+                                <span>Require Signed Property & Aeration Contract/Waiver</span>
+                            </label>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 4px;">When checked, customers must sign the property & flagging waiver for this service.</span>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">Save Service</button>
+                    </form>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        modal = document.getElementById('service-modal');
+    }
+    
+    const form = document.getElementById('service-form');
+    
+    if (serviceId) {
+        const service = window.BookProServices.getById(serviceId);
+        if (service) {
+            document.getElementById('service-modal-title').textContent = 'Edit Service';
+            document.getElementById('service-id').value = service.id;
+            document.getElementById('service-name').value = service.name;
+            document.getElementById('service-description').value = service.description;
+            document.getElementById('service-price').value = service.price;
+            document.getElementById('service-duration').value = service.duration;
+            document.getElementById('service-category').value = service.category;
+            document.getElementById('service-icon').value = service.icon;
+            document.getElementById('service-color').value = service.color || '#6366f1';
+            document.getElementById('service-requires-contract').checked = !!service.requiresContract;
+        }
+    } else {
+        document.getElementById('service-modal-title').textContent = 'Add Service';
+        form.reset();
+        document.getElementById('service-id').value = '';
+        document.getElementById('service-requires-contract').checked = false;
+    }
+    
+    modal.classList.add('show');
+  },
+  
+  handleServiceFormSubmit(e) {
+    e.preventDefault();
+    const id = document.getElementById('service-id').value;
+    const data = {
+        name: document.getElementById('service-name').value,
+        description: document.getElementById('service-description').value,
+        price: Number(document.getElementById('service-price').value),
+        duration: Number(document.getElementById('service-duration').value),
+        category: document.getElementById('service-category').value,
+        icon: document.getElementById('service-icon').value,
+        color: document.getElementById('service-color').value,
+        requiresContract: document.getElementById('service-requires-contract').checked
+    };
+    
+    if (id) {
+        window.BookProServices.update(id, data);
+        window.BookProApp.showToast('Service updated successfully', 'success');
+    } else {
+        window.BookProServices.create(data);
+        window.BookProApp.showToast('Service added successfully', 'success');
+    }
+    
+    document.getElementById('service-modal').classList.remove('show');
+    this.renderDashboard();
+    // Refresh customer-facing service pages
+    window.BookProApp.renderServices('services-grid', window.BookProServices.getAll().slice(0, 3));
+    window.BookProApp.renderServices('all-services-grid', window.BookProServices.getAll());
+  },
+  
+  handleDeleteService(id) {
+    if (confirm('Are you sure you want to delete this service?')) {
+        window.BookProServices.delete(id);
+        window.BookProApp.showToast('Service deleted', 'info');
+        this.renderDashboard();
+        // Refresh customer-facing service pages
+        window.BookProApp.renderServices('services-grid', window.BookProServices.getAll().slice(0, 3));
+        window.BookProApp.renderServices('all-services-grid', window.BookProServices.getAll());
+    }
+  },
+  
+  handleCancelBooking(id) {
+    if (confirm('Are you sure you want to cancel this booking?')) {
+        window.BookProBooking.cancel(id);
+        window.BookProApp.showToast('Booking cancelled', 'info');
+        this.renderDashboard();
+    }
+  }
+};

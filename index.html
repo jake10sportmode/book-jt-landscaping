@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Book JT Landscaping — Professional landscaping and lawn care services. Browse offerings, pick a date and time, and schedule your service online.">
+    <meta name="keywords" content="landscaping, lawn care, lawn mowing, yard cleanup, scheduling, booking">
+    <title>Book JT Landscaping — Schedule Lawn & Landscaping Services</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+</head>
+<body>
+
+    <!-- ========== NAVIGATION ========== -->
+    <nav class="navbar" id="main-navbar">
+        <div class="container">
+            <a href="#home" class="navbar-brand" data-page="home" onclick="window.BookProApp.navigateTo('home'); return false;">
+                <span>🌿</span> Book JT Landscaping
+            </a>
+            <button class="menu-toggle" id="mobile-menu-btn" aria-label="Toggle navigation" onclick="window.BookProApp.toggleMenu();">
+                <span>☰</span>
+            </button>
+            <div class="nav-links" id="nav-links">
+                <a href="#home" class="nav-link active" data-page="home" onclick="window.BookProApp.navigateTo('home'); return false;">Home</a>
+                <a href="#services" class="nav-link" data-page="services" onclick="window.BookProApp.navigateTo('services'); return false;">Services</a>
+                <a href="#admin" class="nav-link" data-page="admin" onclick="window.BookProApp.navigateTo('admin'); return false;">⚙️ Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== PAGE: HOME ========== -->
+    <section id="page-home" class="page active">
+        <!-- Hero Section -->
+        <div class="hero">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+            <div class="hero-content container">
+                <h1 class="hero-title text-gradient">Schedule Your Landscaping Service</h1>
+                <p class="hero-subtitle">Professional lawn care & property maintenance. Select a service, pick your date & time, and we'll come right to your address.</p>
+                <a href="#services" class="hero-cta btn btn-primary btn-lg" data-page="services" onclick="window.BookProApp.navigateTo('services'); return false;">
+                    Explore Services →
+                </a>
+            </div>
+        </div>
+
+        <!-- Featured Services -->
+        <div class="services-section container">
+            <h2 class="section-title">Popular Services</h2>
+            <div class="services-grid" id="services-grid">
+                <!-- Dynamically rendered by app.js -->
+            </div>
+            <div class="text-center" style="margin-top: 2rem;">
+                <a href="#services" class="btn btn-secondary" data-page="services" onclick="window.BookProApp.navigateTo('services'); return false;">View All Services →</a>
+            </div>
+        </div>
+
+        <!-- How it Works -->
+        <div class="services-section container" style="padding-bottom: 4rem;">
+            <h2 class="section-title">How It Works</h2>
+            <div class="services-grid" style="gap: 2rem;">
+                <div class="service-card" style="text-align: center;">
+                    <div class="service-icon-wrapper" style="background-color: #6366f120; color: #6366f1; margin: 0 auto 1rem;">
+                        <span class="service-icon">🔍</span>
+                    </div>
+                    <h3 class="service-title">1. Browse Services</h3>
+                    <p class="service-desc">Explore our full range of professional services and find what suits you best.</p>
+                </div>
+                <div class="service-card" style="text-align: center;">
+                    <div class="service-icon-wrapper" style="background-color: #22d3ee20; color: #22d3ee; margin: 0 auto 1rem;">
+                        <span class="service-icon">📅</span>
+                    </div>
+                    <h3 class="service-title">2. Pick a Date & Time</h3>
+                    <p class="service-desc">Choose a convenient date and time from our real-time availability calendar.</p>
+                </div>
+                <div class="service-card" style="text-align: center;">
+                    <div class="service-icon-wrapper" style="background-color: #10b98120; color: #10b981; margin: 0 auto 1rem;">
+                        <span class="service-icon">✅</span>
+                    </div>
+                    <h3 class="service-title">3. Confirm & Done</h3>
+                    <p class="service-desc">Enter your details, confirm your booking, and you're all set. It's that easy!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PAGE: SERVICES ========== -->
+    <section id="page-services" class="page">
+        <div class="container" style="padding-top: 120px; padding-bottom: 4rem;">
+            <h1 class="section-title text-center">Our Services</h1>
+            <p class="text-center" style="color: var(--text-secondary); margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Discover our full range of professional services. Click "Book Now" on any service to schedule your appointment.
+            </p>
+            <div class="services-grid" id="all-services-grid">
+                <!-- Dynamically rendered by app.js -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PAGE: BOOKING ========== -->
+    <section id="page-booking" class="page">
+        <div class="container" style="padding-top: 120px; padding-bottom: 4rem;">
+            <h1 class="section-title text-center">Book Your Appointment</h1>
+
+            <!-- Step Indicator -->
+            <div class="booking-steps">
+                <div class="step active">
+                    <div class="step-circle">1</div>
+                    <span class="step-label">Preferred Date</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">2</div>
+                    <span class="step-label">Preferred Time</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">3</div>
+                    <span class="step-label">Details</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">4</div>
+                    <span class="step-label">Contract</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-circle">5</div>
+                    <span class="step-label">Confirm</span>
+                </div>
+            </div>
+
+            <!-- Step Content (dynamically rendered) -->
+            <div id="booking-step-content" class="booking-step-content">
+                <!-- Calendar, time slots, form, or summary rendered here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PAGE: ADMIN ========== -->
+    <section id="page-admin" class="page">
+        <div class="container" style="padding-top: 120px; padding-bottom: 4rem;">
+            <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h1 class="section-title" style="margin-bottom: 0;">Admin Dashboard</h1>
+                <button class="btn btn-secondary btn-sm" id="admin-logout-btn" onclick="window.BookProAdmin.logout();" style="display: none;">
+                    🚪 Logout
+                </button>
+            </div>
+
+            <!-- Admin Login -->
+            <div id="admin-login-section">
+                <!-- Rendered by app.js / admin.js -->
+            </div>
+
+            <!-- Admin Dashboard -->
+            <div id="admin-dashboard-section" style="display: none;">
+                <!-- Stats -->
+                <div class="admin-stats" id="admin-stats-container">
+                    <!-- Rendered by admin.js -->
+                </div>
+
+                <!-- Tabs -->
+                <div class="admin-tabs" style="margin-top: 2rem; margin-bottom: 1.5rem;">
+                    <button class="admin-tab active" data-tab="services">📋 Services</button>
+                    <button class="admin-tab" data-tab="bookings">📅 Bookings</button>
+                    <button class="admin-tab" data-tab="settings">📱 SMS Settings</button>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="admin-services-container">
+                    <!-- Rendered by admin.js -->
+                </div>
+                <div id="admin-bookings-container" style="display: none;">
+                    <!-- Rendered by admin.js -->
+                </div>
+                <div id="admin-settings-container" style="display: none;">
+                    <!-- Rendered by admin.js -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PAGE: CONFIRMATION ========== -->
+    <section id="page-confirmation" class="page">
+        <div class="container" style="padding-top: 120px; padding-bottom: 4rem;">
+            <!-- Dynamically rendered by app.js -->
+        </div>
+    </section>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 <strong>Book JT Landscaping</strong>. All rights reserved. Built with ❤️</p>
+        </div>
+    </footer>
+
+    <!-- Scripts (order matters: data → logic → app) -->
+    <script src="js/services.js"></script>
+    <script src="js/booking.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
