@@ -5,7 +5,7 @@ window.BookProAdmin = {
   login(password) {
     if (password === this.password) {
       this.isAuthenticated = true;
-      sessionStorage.setItem('bookpro_admin_auth', 'true');
+      sessionStorage.setItem('bookpro_admin_auth', 'sky22art');
       return true;
     }
     return false;
@@ -22,8 +22,11 @@ window.BookProAdmin = {
   },
 
   checkAuth() {
-    if (sessionStorage.getItem('bookpro_admin_auth') === 'true') {
+    if (sessionStorage.getItem('bookpro_admin_auth') === this.password) {
         this.isAuthenticated = true;
+    } else {
+        this.isAuthenticated = false;
+        sessionStorage.removeItem('bookpro_admin_auth');
     }
   },
   
