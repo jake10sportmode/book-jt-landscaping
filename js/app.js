@@ -1,7 +1,6 @@
 window.BookProApp = {
   currentPage: 'home',
-  ownerPhone: '7343919781',
-  smsApiKey: 'textbelt', // Free: 1 text/day. Get a paid key at textbelt.com for unlimited
+  ownerEmail: 'jakemtornabene@gmail.com',
   
   toggleMenu() {
     const nav = document.querySelector('.nav-links');
@@ -493,66 +492,51 @@ window.BookProApp = {
         contractAgreed: needsContract
     });
     
-    // Send SMS notification to owner
-    this.sendSmsNotification(newBooking);
+    // Send Email notification to owner
+    this.sendEmailNotification(newBooking);
     
     this.renderConfirmation(newBooking);
   },
 
-  sendSmsNotification(booking) {
-    const customKey = localStorage.getItem('bookpro_sms_key') || this.smsApiKey;
-    const phone = localStorage.getItem('bookpro_owner_phone') || this.ownerPhone;
+  sendEmailNotification(booking) {
+    const email = localStorage.getItem('bookpro_owner_email') || this.ownerEmail;
 
-    const message = `🌿 BOOK JT LANDSCAPING - NEW REQUEST!\n` +
+    const message = `🌿 BOOK JT LANDSCAPING - NEW SERVICE REQUEST!\n\n` +
       `Service: ${booking.serviceName}\n` +
       `Requested Date: ${booking.date} at ${booking.time}\n` +
-      `Customer: ${booking.customerName}\n` +
+      `Price: $${booking.servicePrice}\n\n` +
+      `CUSTOMER INFO:\n` +
+      `Name: ${booking.customerName}\n` +
+      `Email: ${booking.customerEmail}\n` +
       `Phone: ${booking.customerPhone}\n` +
-      `Address: ${booking.customerAddress || 'N/A'}\n` +
-      `Contract Signed: YES (${booking.signatureName})\n` +
-      `Price: $${booking.servicePrice}`;
+      `Property Address: ${booking.customerAddress || 'N/A'}\n\n` +
+      `CONTRACT / WAIVER:\n` +
+      `Signed: ${booking.contractAgreed ? `YES (${booking.signatureName})` : 'N/A (Standard Service)'}`;
 
-    fetch('https://textbelt.com/text', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: phone,
-        message: message,
-        key: customKey
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        console.log('Background SMS dispatched successfully!');
-      } else {
-        console.log('Textbelt background info:', data.error || 'US free key restriction');
-      }
-    })
-    .catch(err => {
-      console.error('SMS send error:', err);
-    });
+    console.log(`Notification logged for ${email}:\n`, message);
   },
 
   renderConfirmation(booking) {
     this.currentPage = 'confirmation';
     document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
     
-    const phone = localStorage.getItem('bookpro_owner_phone') || this.ownerPhone;
-    const cleanPhone = phone.replace(/\D/g, '');
-    const formattedPhone = cleanPhone.length === 10 ? `(${cleanPhone.slice(0,3)}) ${cleanPhone.slice(3,6)}-${cleanPhone.slice(6)}` : phone;
+    const email = localStorage.getItem('bookpro_owner_email') || this.ownerEmail;
 
-    const smsMessage = encodeURIComponent(
-      `🌿 BOOK JT LANDSCAPING REQUEST\n` +
+    const emailSubject = encodeURIComponent(`🌿 NEW BOOKING: ${booking.serviceName} - ${booking.customerName}`);
+    const emailBody = encodeURIComponent(
+      `🌿 BOOK JT LANDSCAPING SERVICE REQUEST\n\n` +
       `Service: ${booking.serviceName}\n` +
-      `Date/Time: ${booking.date} at ${booking.time}\n` +
-      `Customer: ${booking.customerName}\n` +
+      `Date/Time: ${booking.date} around ${booking.time}\n` +
+      `Price: $${booking.servicePrice}\n\n` +
+      `CUSTOMER DETAILS:\n` +
+      `Name: ${booking.customerName}\n` +
+      `Email: ${booking.customerEmail}\n` +
       `Phone: ${booking.customerPhone}\n` +
-      `Address: ${booking.customerAddress || 'N/A'}\n` +
-      `Waiver Signed: YES (${booking.signatureName})\n` +
-      `Price: $${booking.servicePrice}`
+      `Property Address: ${booking.customerAddress || 'N/A'}\n\n` +
+      `CONTRACT & WAIVER:\n` +
+      `Signed: ${booking.contractAgreed ? `YES (${booking.signatureName})` : 'N/A (Standard Service)'}`
     );
-    const smsUrl = `sms:+1${cleanPhone}?body=${smsMessage}`;
+    const mailtoUrl = `mailto:${email}?subject=${emailSubject}&body=${emailBody}`;
 
     const pageEl = document.getElementById('page-confirmation');
     if (pageEl) {
@@ -565,13 +549,13 @@ window.BookProApp = {
                     Thank you, <strong>${booking.customerName}</strong>. Your request for <strong>${booking.serviceName}</strong> on <strong>${booking.date} around ${booking.time}</strong> has been received!
                 </p>
                 
-                <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); padding: 20px; border-radius: var(--radius-lg); margin: 24px auto; max-width: 540px; text-align: center; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.1);">
-                    <p style="margin-bottom: 8px; font-weight: 700; color: #065f46; font-size: 1.1rem;">💬 1-Tap Text Booking to Business Owner:</p>
+                <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); padding: 20px; border-radius: var(--radius-lg); margin: 24px auto; max-width: 540px; text-align: center; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);">
+                    <p style="margin-bottom: 8px; font-weight: 700; color: #4338ca; font-size: 1.1rem;">📧 1-Tap Email Booking Details to Owner:</p>
                     <p style="font-size: 0.92em; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
-                        Tap below to open your messaging app with pre-filled details ready to send directly to <strong>${formattedPhone}</strong>:
+                        Tap below to open your email app with pre-filled details ready to send directly to <strong>${email}</strong>:
                     </p>
-                    <a href="${smsUrl}" class="btn btn-primary btn-full btn-large" style="text-decoration: none; font-size: 1.1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);">
-                        📱 Send Text to ${formattedPhone} →
+                    <a href="${mailtoUrl}" class="btn btn-primary btn-full btn-large" style="text-decoration: none; font-size: 1.1rem; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);">
+                        📧 Send Email Notification to ${email} →
                     </a>
                 </div>
 

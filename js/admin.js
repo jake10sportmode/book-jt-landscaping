@@ -94,31 +94,22 @@ window.BookProAdmin = {
     const container = document.getElementById('admin-settings-container');
     if (!container) return;
 
-    const currentPhone = localStorage.getItem('bookpro_owner_phone') || '7343919781';
-    const currentKey = localStorage.getItem('bookpro_sms_key') || '';
+    const currentEmail = localStorage.getItem('bookpro_owner_email') || 'jakemtornabene@gmail.com';
 
     container.innerHTML = `
       <div style="background: #ffffff; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 32px; max-width: 600px; box-shadow: var(--glass-shadow);">
-        <h3 style="margin-bottom: 20px;">📱 Phone & SMS Settings</h3>
+        <h3 style="margin-bottom: 20px;">📧 Owner Email Settings</h3>
         
         <form onsubmit="event.preventDefault(); window.BookProAdmin.saveSettings();">
           <div class="form-group" style="margin-bottom: 20px;">
-            <label>Business Owner Phone Number (10 digits)</label>
-            <input type="tel" id="settings-phone" class="form-input" required value="${currentPhone}" placeholder="7343919781">
-            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 4px;">Phone number used for 1-Tap text link and background SMS dispatches.</span>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 20px;">
-            <label>Textbelt API Key (Optional)</label>
-            <input type="text" id="settings-key" class="form-input" value="${currentKey}" placeholder="e.g. textbelt_api_key_here">
-            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 4px;">
-              Note: Textbelt disables free public key for US numbers. If you purchase an API key at <a href="https://textbelt.com" target="_blank" style="color: var(--primary-start);">textbelt.com</a> ($1 for 100 texts), paste it here for automated background texts!
-            </span>
+            <label>Business Owner Email Address</label>
+            <input type="email" id="settings-email" class="form-input" required value="${currentEmail}" placeholder="jakemtornabene@gmail.com">
+            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 4px;">Notification email for customer booking requests, addresses, and signed waivers.</span>
           </div>
 
           <div style="display: flex; gap: 12px; margin-top: 24px;">
-            <button type="submit" class="btn btn-primary">Save Settings</button>
-            <button type="button" class="btn btn-secondary" onclick="window.BookProAdmin.sendTestSms()">Send Test Text</button>
+            <button type="submit" class="btn btn-primary">Save Email Settings</button>
+            <button type="button" class="btn btn-secondary" onclick="window.BookProAdmin.testEmailLink()">Test Email Link</button>
           </div>
         </form>
       </div>
@@ -126,56 +117,24 @@ window.BookProAdmin = {
   },
 
   saveSettings() {
-    const phoneInput = document.getElementById('settings-phone');
-    const keyInput = document.getElementById('settings-key');
-    if (!phoneInput) return;
+    const emailInput = document.getElementById('settings-email');
+    if (!emailInput) return;
 
-    const phone = phoneInput.value.replace(/\D/g, '');
-    const key = keyInput ? keyInput.value.trim() : '';
-
-    if (phone.length < 10) {
-      window.BookProApp.showToast('Please enter a valid 10-digit phone number', 'warning');
+    const email = emailInput.value.trim();
+    if (!email || !email.includes('@')) {
+      window.BookProApp.showToast('Please enter a valid email address', 'warning');
       return;
     }
 
-    localStorage.setItem('bookpro_owner_phone', phone);
-    if (key) {
-      localStorage.setItem('bookpro_sms_key', key);
-    } else {
-      localStorage.removeItem('bookpro_sms_key');
-    }
-
-    window.BookProApp.showToast('SMS & Phone settings saved!', 'success');
+    localStorage.setItem('bookpro_owner_email', email);
+    window.BookProApp.showToast('Owner email settings saved!', 'success');
   },
 
-  sendTestSms() {
-    const phoneInput = document.getElementById('settings-phone');
-    const keyInput = document.getElementById('settings-key');
-    const phone = phoneInput ? phoneInput.value.replace(/\D/g, '') : '7343919781';
-    const key = (keyInput && keyInput.value.trim()) ? keyInput.value.trim() : 'textbelt';
-
-    window.BookProApp.showToast('Sending test message...', 'info');
-
-    fetch('https://textbelt.com/text', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: phone,
-        message: '🌿 Test SMS from Book JT Landscaping Admin Settings!',
-        key: key
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        window.BookProApp.showToast('✅ Test SMS sent successfully!', 'success');
-      } else {
-        window.BookProApp.showToast(`⚠️ Textbelt Info: ${data.error || 'Free key disabled for US numbers'}`, 'warning');
-      }
-    })
-    .catch(err => {
-      window.BookProApp.showToast('Failed to connect to SMS service', 'error');
-    });
+  testEmailLink() {
+    const email = localStorage.getItem('bookpro_owner_email') || 'jakemtornabene@gmail.com';
+    const subject = encodeURIComponent('🌿 TEST NOTIFICATION - Book JT Landscaping');
+    const body = encodeURIComponent('This is a test notification from Book JT Landscaping Admin Settings.\n\nEverything is set up and working!');
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
   },
   
   renderServicesTable() {
