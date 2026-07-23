@@ -98,23 +98,73 @@ window.BookProAdmin = {
     if (!container) return;
 
     const currentEmail = localStorage.getItem('bookpro_owner_email') || 'jakemtornabene@gmail.com';
+    const liveUrl = 'https://jake10sportmode.github.io/book-jt-landscaping/';
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(liveUrl)}`;
+
+    const currentServicesJson = JSON.stringify(window.BookProServices.getAll(), null, 2);
 
     container.innerHTML = `
-      <div style="background: #ffffff; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 32px; max-width: 600px; box-shadow: var(--glass-shadow);">
-        <h3 style="margin-bottom: 20px;">📧 Owner Email Settings</h3>
+      <div style="display: flex; flex-direction: column; gap: 24px; max-width: 700px;">
         
-        <form onsubmit="event.preventDefault(); window.BookProAdmin.saveSettings();">
-          <div class="form-group" style="margin-bottom: 20px;">
-            <label>Business Owner Email Address</label>
-            <input type="email" id="settings-email" class="form-input" required value="${currentEmail}" placeholder="jakemtornabene@gmail.com">
-            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 4px;">Notification email for customer booking requests, addresses, and signed waivers.</span>
+        <!-- QR Code & Live Site Card -->
+        <div style="background: #ffffff; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--glass-shadow);">
+          <h3 style="margin-bottom: 12px;">📱 Live Website & QR Code</h3>
+          <p style="font-size: 0.9em; color: var(--text-secondary); margin-bottom: 20px;">
+            This is your official live website link for customers and QR code scans:
+          </p>
+          
+          <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+            <div style="background: #f8fafc; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--glass-border); text-align: center;">
+              <img src="${qrUrl}" alt="Live QR Code" style="width: 180px; height: 180px; display: block; border-radius: 8px;">
+              <a href="${qrUrl}" download="book-jt-landscaping-qr.png" target="_blank" style="font-size: 0.8rem; color: var(--primary-start); font-weight: 600; text-decoration: none; display: inline-block; margin-top: 8px;">📥 Download QR Code</a>
+            </div>
+            
+            <div style="flex: 1; min-width: 240px;">
+              <label style="font-weight: 600; font-size: 0.9rem;">Live Published Website URL:</label>
+              <div style="display: flex; gap: 8px; margin-top: 6px;">
+                <input type="text" readonly value="${liveUrl}" class="form-input" style="font-family: monospace; font-size: 0.88rem; background: #f8fafc;">
+                <a href="${liveUrl}" target="_blank" class="btn btn-secondary" style="text-decoration: none; white-space: nowrap;">Open 🔗</a>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 10px; line-height: 1.4;">
+                When customers scan your QR code on their phone, they will be taken to this live URL!
+              </p>
+            </div>
           </div>
+        </div>
 
-          <div style="display: flex; gap: 12px; margin-top: 24px;">
-            <button type="submit" class="btn btn-primary">Save Email Settings</button>
-            <button type="button" class="btn btn-secondary" onclick="window.BookProAdmin.testEmailLink()">Test Email Link</button>
+        <!-- Owner Email Settings Card -->
+        <div style="background: #ffffff; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--glass-shadow);">
+          <h3 style="margin-bottom: 20px;">📧 Owner Email Settings</h3>
+          
+          <form onsubmit="event.preventDefault(); window.BookProAdmin.saveSettings();">
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label>Business Owner Email Address</label>
+              <input type="email" id="settings-email" class="form-input" required value="${currentEmail}" placeholder="jakemtornabene@gmail.com">
+              <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 4px;">Notification email for customer booking requests, addresses, and signed waivers.</span>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+              <button type="submit" class="btn btn-primary">Save Email Settings</button>
+              <button type="button" class="btn btn-secondary" onclick="window.BookProAdmin.testEmailLink()">Test Email Link</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Catalog Exporter Card -->
+        <div style="background: #ffffff; border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--glass-shadow);">
+          <h3 style="margin-bottom: 12px;">💾 Publish Admin Edits to Live Site & QR Code</h3>
+          <p style="font-size: 0.9em; color: var(--text-secondary); margin-bottom: 16px;">
+            If you added, edited, or deleted services in Admin mode, click below to copy your current service catalog code so it can be published to GitHub for all QR code scans!
+          </p>
+
+          <textarea id="catalog-json-box" class="form-textarea" style="height: 120px; font-family: monospace; font-size: 0.82rem; margin-bottom: 16px;" readonly>${currentServicesJson}</textarea>
+          
+          <div style="display: flex; gap: 12px;">
+            <button class="btn btn-primary" onclick="window.BookProAdmin.copyCatalogJson()">📋 Copy Catalog Code</button>
+            <button class="btn btn-secondary" onclick="window.BookProAdmin.resetToDefaultServices()">🔄 Reset to Default Services</button>
           </div>
-        </form>
+        </div>
+
       </div>
     `;
   },
@@ -138,6 +188,26 @@ window.BookProAdmin = {
     const subject = encodeURIComponent('🌿 TEST NOTIFICATION - Book JT Landscaping');
     const body = encodeURIComponent('This is a test notification from Book JT Landscaping Admin Settings.\n\nEverything is set up and working!');
     window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+  },
+
+  copyCatalogJson() {
+    const box = document.getElementById('catalog-json-box');
+    if (box) {
+      box.select();
+      navigator.clipboard.writeText(box.value);
+      window.BookProApp.showToast('Service catalog copied to clipboard!', 'success');
+    }
+  },
+
+  resetToDefaultServices() {
+    if (confirm('Reset services to master defaults?')) {
+      localStorage.removeItem('bookpro_services');
+      window.BookProServices.initDefaults();
+      this.renderDashboard();
+      window.BookProApp.renderServices('services-grid', window.BookProServices.getAll().slice(0, 3));
+      window.BookProApp.renderServices('all-services-grid', window.BookProServices.getAll());
+      window.BookProApp.showToast('Services reset to default catalog!', 'info');
+    }
   },
   
   renderServicesTable() {
