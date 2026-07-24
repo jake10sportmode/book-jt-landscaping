@@ -99,41 +99,14 @@
 
     <!-- ========== PAGE: BOOKING ========== -->
     <section id="page-booking" class="page">
-        <div class="container" style="padding-top: 120px; padding-bottom: 4rem;">
-            <h1 class="section-title text-center">Book Your Appointment</h1>
+        <div class="container" style="padding-top: 120px; padding-bottom: 4rem; max-width: 620px;">
+            <h1 class="section-title text-center">Book Your Service</h1>
 
-            <!-- Step Indicator -->
-            <div class="booking-steps">
-                <div class="step active">
-                    <div class="step-circle">1</div>
-                    <span class="step-label">Preferred Date</span>
-                </div>
-                <div class="step-line"></div>
-                <div class="step">
-                    <div class="step-circle">2</div>
-                    <span class="step-label">Preferred Time</span>
-                </div>
-                <div class="step-line"></div>
-                <div class="step">
-                    <div class="step-circle">3</div>
-                    <span class="step-label">Details</span>
-                </div>
-                <div class="step-line"></div>
-                <div class="step">
-                    <div class="step-circle">4</div>
-                    <span class="step-label">Contract</span>
-                </div>
-                <div class="step-line"></div>
-                <div class="step">
-                    <div class="step-circle">5</div>
-                    <span class="step-label">Confirm</span>
-                </div>
-            </div>
+            <!-- Step Indicator (dynamically rendered) -->
+            <div class="booking-steps" style="margin-bottom: 2rem;"></div>
 
-            <!-- Step Content (dynamically rendered) -->
-            <div id="booking-step-content" class="booking-step-content">
-                <!-- Calendar, time slots, form, or summary rendered here -->
-            </div>
+            <!-- Form Content (dynamically rendered) -->
+            <div id="booking-step-content" class="booking-step-content"></div>
         </div>
     </section>
 
@@ -195,9 +168,9 @@
     </footer>
 
     <!-- Scripts (order matters: data → logic → app) -->
-    <script src="js/services.js?v=3"></script>
-    <script src="js/booking.js?v=3"></script>
-    <script src="js/admin.js?v=3"></script>
-    <script src="js/app.js?v=3"></script>
+    <script src="js/services.js?v=4"></script>
+    <script src="js/booking.js?v=4"></script>
+    <script src="js/admin.js?v=4"></script>
+    <script src="js/app.js?v=4"></script>
 </body>
 </html>

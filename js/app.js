@@ -89,17 +89,13 @@ window.BookProApp = {
         const services = window.BookProServices.getAll();
         this.renderServices('all-services-grid', services);
     } else if (page === 'booking') {
-        // Only set/reset service if explicit serviceId provided
         if (data && data.serviceId) {
             window.BookProBooking.reset();
             window.BookProBooking.setService(data.serviceId);
         }
         
-        // Verify we have a selected service
         if (window.BookProBooking.currentBooking.serviceId) {
-            const now = new Date();
-            this.renderCalendar(now.getFullYear(), now.getMonth());
-            this.updateBookingSteps(1);
+            this.renderBookingPage();
         } else {
             this.showToast('Please select a service first', 'info');
             this.navigateTo('services');
@@ -115,7 +111,6 @@ window.BookProApp = {
     toast.textContent = message;
     document.body.appendChild(toast);
     
-    // Trigger animation
     setTimeout(() => {
         toast.classList.add('show');
     }, 10);
@@ -144,7 +139,7 @@ window.BookProApp = {
   },
 
   renderServiceCard(service) {
-    const waiverBadge = service.requiresContract ? `<span style="background: rgba(245, 158, 11, 0.15); color: #b45309; font-size: 0.75em; padding: 3px 8px; border-radius: 4px; font-weight: 600; margin-left: 8px; display: inline-block;">📜 Waiver Required</span>` : '';
+    const waiverBadge = service.requiresContract ? `<span style="background: rgba(245, 158, 11, 0.15); color: #b45309; font-size: 0.75em; padding: 3px 8px; border-radius: 4px; font-weight: 600; margin-left: 8px; display: inline-block;">📜 Waiver</span>` : '';
     return `
       <div class="service-card" style="--accent-color: ${service.color}">
         <div class="service-icon-wrapper" style="background-color: ${service.color}20; color: ${service.color}">
@@ -160,420 +155,239 @@ window.BookProApp = {
       </div>
     `;
   },
-  
-  updateBookingSteps(step) {
-      const container = document.querySelector('.booking-steps');
-      if (!container) return;
 
-      const bk = window.BookProBooking.currentBooking;
-      const service = bk.serviceId ? window.BookProServices.getById(bk.serviceId) : null;
-      const needsContract = service ? !!service.requiresContract : false;
+  // ============================
+  // SIMPLIFIED BOOKING FLOW
+  // ============================
 
-      let steps = [
-          { num: 1, label: 'Preferred Date' },
-          { num: 2, label: 'Preferred Time' },
-          { num: 3, label: 'Details' }
-      ];
-
-      if (needsContract) {
-          steps.push({ num: 4, label: 'Contract' });
-          steps.push({ num: 5, label: 'Confirm' });
-      } else {
-          steps.push({ num: 4, label: 'Confirm' });
-      }
-
-      let html = '';
-      steps.forEach((s, idx) => {
-          let classes = 'step';
-          if (idx + 1 < step) classes += ' completed';
-          if (idx + 1 === step) classes += ' active';
-
-          html += `
-              <div class="${classes}">
-                  <div class="step-circle">${s.num}</div>
-                  <span class="step-label">${s.label}</span>
-              </div>
-          `;
-          if (idx < steps.length - 1) {
-              html += `<div class="step-line"></div>`;
-          }
-      });
-
-      container.innerHTML = html;
-  },
-
-  renderCalendar(year, month) {
-    this.updateBookingSteps(1);
+  renderBookingPage() {
     const content = document.getElementById('booking-step-content');
     if (!content) return;
-    
-    const cal = window.BookProBooking.generateCalendar(year, month);
-    
-    let html = `
-        <div class="booking-step-header">
-            <h3>Choose Date</h3>
-        </div>
-        <div class="calendar-wrapper">
-            <div class="calendar-controls">
-                <button class="btn btn-icon" onclick="window.BookProApp.renderCalendar(${month === 0 ? year-1 : year}, ${month === 0 ? 11 : month-1})">&lt;</button>
-                <h4 class="calendar-month">${cal.monthName} ${year}</h4>
-                <button class="btn btn-icon" onclick="window.BookProApp.renderCalendar(${month === 11 ? year+1 : year}, ${month === 11 ? 0 : month+1})">&gt;</button>
-            </div>
-            <div class="calendar-grid">
-                <div class="day-label">Sun</div><div class="day-label">Mon</div><div class="day-label">Tue</div>
-                <div class="day-label">Wed</div><div class="day-label">Thu</div><div class="day-label">Fri</div><div class="day-label">Sat</div>
-    `;
-    
-    cal.days.forEach(day => {
-        if (!day) {
-            html += `<div class="calendar-day empty"></div>`;
-        } else {
-            const isBookable = !day.isPast && window.BookProBooking.businessDays.includes(day.dayOfWeek);
-            let classes = 'calendar-day';
-            if (day.isToday) classes += ' today';
-            if (!isBookable) classes += ' disabled';
-            if (window.BookProBooking.currentBooking.date === day.date) classes += ' selected';
-            
-            html += `<div class="${classes}" ${isBookable ? `onclick="window.BookProApp.selectDate('${day.date}')"` : ''}>${day.dayNum}</div>`;
-        }
-    });
-    
-    html += `</div></div>`;
-    content.innerHTML = html;
-  },
-  
-  selectDate(dateStr) {
-      window.BookProBooking.setDate(dateStr);
-      this.renderTimeSlots(dateStr);
-  },
 
-  renderCalendarForDate(dateStr) {
-    if (!dateStr) {
-      const now = new Date();
-      return this.renderCalendar(now.getFullYear(), now.getMonth());
-    }
-    const [y, m] = dateStr.split('-').map(Number);
-    this.renderCalendar(y, m - 1);
-  },
-
-  renderTimeSlots(dateStr) {
-    this.updateBookingSteps(2);
-    const content = document.getElementById('booking-step-content');
-    if (!content) return;
-    
-    const service = window.BookProServices.getById(window.BookProBooking.currentBooking.serviceId);
+    const bk = window.BookProBooking.currentBooking;
+    const service = window.BookProServices.getById(bk.serviceId);
     if (!service) return this.navigateTo('services');
+    const needsContract = !!service.requiresContract;
 
-    const slots = window.BookProBooking.getAvailableTimeSlots(dateStr, service.duration);
-    
-    let html = `
-        <div class="booking-step-header">
-            <button class="btn btn-text" onclick="window.BookProApp.renderCalendarForDate('${dateStr}')">&larr; Back</button>
-            <h3>Choose Requested Time Window</h3>
-        </div>
-        <p class="text-center" style="margin-bottom: 20px;">Available slots for ${dateStr}</p>
-        <div class="time-slots-grid">
-    `;
-    
-    if (slots.length === 0) {
-        html += `<p class="text-center" style="grid-column: 1/-1;">No available times on this date. Please select another date.</p>`;
-    } else {
-        slots.forEach(slot => {
-            html += `<button class="btn time-slot-btn" onclick="window.BookProApp.selectTime('${slot}')">${slot}</button>`;
+    // Build the step indicator
+    const stepsContainer = document.querySelector('.booking-steps');
+    if (stepsContainer) {
+        let stepsHtml = '';
+        const stepLabels = needsContract 
+            ? ['Your Info', 'Waiver', 'Done'] 
+            : ['Your Info', 'Done'];
+        stepLabels.forEach((label, i) => {
+            stepsHtml += `<div class="step ${i === 0 ? 'active' : ''}"><div class="step-circle">${i+1}</div><span class="step-label">${label}</span></div>`;
+            if (i < stepLabels.length - 1) stepsHtml += '<div class="step-line"></div>';
         });
+        stepsContainer.innerHTML = stepsHtml;
     }
-    
-    html += `</div>`;
-    content.innerHTML = html;
-  },
 
-  selectTime(timeStr) {
-      window.BookProBooking.setTime(timeStr);
-      this.renderBookingForm();
-  },
-   renderBookingForm() {
-    this.updateBookingSteps(3);
-    const content = document.getElementById('booking-step-content');
-    if (!content) return;
-    
-    const bk = window.BookProBooking.currentBooking;
-    const service = window.BookProServices.getById(bk.serviceId);
-    const needsContract = service ? !!service.requiresContract : false;
-    const btnText = needsContract ? 'Continue to Service Contract →' : 'Continue to Summary →';
-    
-    content.innerHTML = `
-        <div class="booking-step-header">
-            <button class="btn btn-text" onclick="window.BookProApp.renderTimeSlots('${bk.date}')">&larr; Back</button>
-            <h3>Your Contact & Location Details</h3>
-        </div>
-        <form id="booking-contact-form" class="booking-form" onsubmit="event.preventDefault(); window.BookProApp.handleContactSubmit()">
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" id="booking-name" required placeholder="John Doe" value="${bk.customerName || ''}">
-            </div>
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" id="booking-email" required placeholder="john@example.com" value="${bk.customerEmail || ''}">
-            </div>
-            <div class="form-group">
-                <label>Phone Number</label>
-                <input type="tel" id="booking-phone" required placeholder="(734) 555-0199" value="${bk.customerPhone || ''}">
-            </div>
-            <div class="form-group">
-                <label>Service Property Address</label>
-                <input type="text" id="booking-address" required placeholder="123 Main St, City, ST 12345" value="${bk.customerAddress || ''}">
-            </div>
-            <button type="submit" class="btn btn-primary btn-full" style="margin-top: 15px;">${btnText}</button>
-        </form>
-    `;
-  },
-
-  handleContactSubmit() {
-    const name = document.getElementById('booking-name').value;
-    const email = document.getElementById('booking-email').value;
-    const phone = document.getElementById('booking-phone').value;
-    const address = document.getElementById('booking-address').value;
-    
-    const bk = window.BookProBooking.currentBooking;
-    bk.customerName = name;
-    bk.customerEmail = email;
-    bk.customerPhone = phone;
-    bk.customerAddress = address;
-
-    const service = window.BookProServices.getById(bk.serviceId);
-    if (service && service.requiresContract) {
-      this.renderContractForm();
-    } else {
-      bk.contractAgreed = false;
-      bk.signatureName = null;
-      this.renderBookingSummary();
-    }
-  },
-
-  renderContractForm() {
-    this.updateBookingSteps(4);
-    const content = document.getElementById('booking-step-content');
-    if (!content) return;
-    
-    const bk = window.BookProBooking.currentBooking;
-    const service = window.BookProServices.getById(bk.serviceId);
+    // Get today's date for min attribute
+    const today = new Date().toISOString().split('T')[0];
 
     content.innerHTML = `
-        <div class="booking-step-header">
-            <button class="btn btn-text" onclick="window.BookProApp.renderBookingForm()">&larr; Back to Details</button>
-            <h3>Service Agreement & Property Liability Waiver</h3>
+        <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="background: ${service.color}20; color: ${service.color}; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;">${service.icon}</div>
+            <div style="flex: 1;">
+                <strong style="font-size: 1.1rem;">${service.name}</strong>
+                <div style="color: var(--text-secondary); font-size: 0.9rem;">$${service.price} · ${service.duration} min</div>
+            </div>
+            <button class="btn btn-text" style="font-size: 0.85rem;" onclick="window.BookProApp.navigateTo('services')">Change Service</button>
         </div>
-        <div class="contract-wrapper" style="background: #f8fafc; border: 1px solid var(--glass-border); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; max-height: 320px; overflow-y: auto; font-size: 0.92rem; line-height: 1.6;">
-            <h4 style="color: var(--text-primary); margin-bottom: 12px; font-size: 1.05rem;">📋 Book JT Landscaping Service Agreement (${service.name})</h4>
-            
-            <p><strong>1. Requested Schedule Notice:</strong> Selected dates and times are preferred request windows. Book JT Landscaping will review property location and routing, and confirm final appointment timing via phone/text.</p>
-            
-            <div style="background: rgba(245, 158, 11, 0.12); border-left: 4px solid var(--warning); padding: 14px; margin: 16px 0; border-radius: 4px;">
-                <p style="color: #b45309; font-weight: 700; margin-bottom: 6px;">⚠️ MANDATORY UNDERGROUND OBJECT & UTILITY MARKING REQUIREMENT (Aeration & Excavation):</p>
-                <p style="color: #92400e; font-size: 0.9rem;">
-                    For Aeration, tilling, dethatching, or any lawn penetration services: 
-                    <strong>The Customer MUST mark or plant flags on all underground items prior to the service date</strong> — including sprinkler heads, valve boxes, shallow irrigation lines, invisible dog fences, outdoor lighting wiring, and underground utility cables.
-                </p>
-                <p style="color: #92400e; font-size: 0.9rem; margin-top: 6px;">
-                    <strong>Damages & Liability:</strong> Book JT Landscaping is <u>NOT liable or responsible</u> for damages to any unmarked underground lines, sprinkler equipment, invisible fences, or hidden objects. <strong>Any and all repair costs, parts, or labor resulting from unmarked underground items are the sole financial responsibility of the Customer.</strong>
-                </p>
+
+        <form id="booking-main-form" class="booking-form" onsubmit="event.preventDefault(); window.BookProApp.handleBookingFormSubmit();">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Full Name *</label>
+                    <input type="text" id="booking-name" required placeholder="Your name">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="booking-phone" required placeholder="(734) 555-0199">
+                </div>
             </div>
 
-            <p><strong>2. Property Access:</strong> Customer agrees to provide clear access to lawns, gates (unlocked), water spigots if required, and ensure pets are secured inside on the scheduled service day.</p>
-            <p><strong>3. Payment Terms:</strong> Payment is due upon completion of requested service unless prior invoice terms have been agreed upon.</p>
-        </div>
+            <div class="form-group">
+                <label>Email (optional)</label>
+                <input type="email" id="booking-email" placeholder="you@email.com">
+            </div>
 
-        <form id="contract-form" class="booking-form" onsubmit="event.preventDefault(); window.BookProApp.handleContractSubmit()">
-            <div class="form-group" style="margin-bottom: 16px;">
-                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem;">
-                    <input type="checkbox" id="contract-agree" required style="width: 20px; height: 20px; margin-top: 2px; accent-color: var(--primary-start);">
-                    <span>I have read, understand, and agree to the Service Agreement terms and the <strong>Underground Item Flagging & Liability Waiver</strong> above.</span>
+            <div class="form-group">
+                <label>Property Address *</label>
+                <input type="text" id="booking-address" required placeholder="123 Main St, City, MI 48000">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Preferred Date *</label>
+                    <input type="date" id="booking-date" required min="${today}">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Preferred Time *</label>
+                    <select id="booking-time" required style="width: 100%; padding: 10px 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); font-size: 1rem; background: #fff;">
+                        <option value="">Select time...</option>
+                        <option value="Morning (8am-11am)">Morning (8am-11am)</option>
+                        <option value="Midday (11am-1pm)">Midday (11am-1pm)</option>
+                        <option value="Afternoon (1pm-4pm)">Afternoon (1pm-4pm)</option>
+                        <option value="Late Afternoon (4pm-6pm)">Late Afternoon (4pm-6pm)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Notes (optional)</label>
+                <textarea id="booking-notes" rows="2" placeholder="Gate code, special instructions, etc." style="width: 100%; padding: 10px 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+
+            ${needsContract ? `
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-md); padding: 20px; margin-top: 8px;">
+                <p style="font-weight: 700; color: #b45309; margin-bottom: 8px;">⚠️ Property Marking Required for ${service.name}</p>
+                <p style="font-size: 0.88rem; color: #92400e; line-height: 1.5; margin-bottom: 12px;">
+                    You <strong>MUST plant flags</strong> on all sprinkler heads, invisible dog fences, underground wiring, and utility lines <strong>before service day</strong>. 
+                    Book JT Landscaping is NOT responsible for damage to unmarked underground items. All repair costs for unmarked items are the customer's responsibility.
+                </p>
+                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.92rem; margin-bottom: 8px;">
+                    <input type="checkbox" id="contract-agree" required style="width: 20px; height: 20px; margin-top: 2px; accent-color: #b45309; flex-shrink: 0;">
+                    <span>I understand and accept. I will mark all underground items before service day.</span>
                 </label>
+                <div class="form-group" style="margin-bottom: 0; margin-top: 10px;">
+                    <label style="font-size: 0.88rem;">Type your name to sign *</label>
+                    <input type="text" id="contract-signature" required placeholder="Your full name as signature">
+                </div>
             </div>
-            
-            <div class="form-group">
-                <label>Digital Signature (Type your Legal Full Name to sign)</label>
-                <input type="text" id="contract-signature" required placeholder="Type your Full Name to Sign" value="${bk.signatureName || bk.customerName || ''}">
-                <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">By typing your name, you acknowledge this acts as a legally binding electronic signature.</span>
-            </div>
+            ` : ''}
 
-            <button type="submit" class="btn btn-primary btn-full" style="margin-top: 15px;">Accept & Continue to Summary →</button>
+            <button type="submit" id="submit-booking-btn" class="btn btn-primary btn-full btn-large" style="margin-top: 20px; font-size: 1.05rem;">
+                Submit Booking Request
+            </button>
         </form>
     `;
   },
 
-  handleContractSubmit() {
-    const agree = document.getElementById('contract-agree').checked;
-    const signature = document.getElementById('contract-signature').value;
-    
-    if (!agree || !signature.trim()) {
-      this.showToast('Please accept terms and provide your signature', 'warning');
-      return;
-    }
-    
-    window.BookProBooking.currentBooking.contractAgreed = true;
-    window.BookProBooking.currentBooking.signatureName = signature.trim();
-    window.BookProBooking.currentBooking.signatureDate = new Date().toLocaleDateString();
-
-    this.renderBookingSummary();
-  },
-
-  renderBookingSummary() {
+  handleBookingFormSubmit() {
     const bk = window.BookProBooking.currentBooking;
     const service = window.BookProServices.getById(bk.serviceId);
     const needsContract = service ? !!service.requiresContract : false;
 
-    const currentStep = needsContract ? 5 : 4;
-    this.updateBookingSteps(currentStep);
+    const name = document.getElementById('booking-name').value.trim();
+    const phone = document.getElementById('booking-phone').value.trim();
+    const email = document.getElementById('booking-email').value.trim();
+    const address = document.getElementById('booking-address').value.trim();
+    const date = document.getElementById('booking-date').value;
+    const time = document.getElementById('booking-time').value;
+    const notes = document.getElementById('booking-notes').value.trim();
 
-    const content = document.getElementById('booking-step-content');
-    if (!content) return;
-    
-    const backAction = needsContract ? "window.BookProApp.renderContractForm()" : "window.BookProApp.renderBookingForm()";
-    const backText = needsContract ? "&larr; Edit Contract" : "&larr; Edit Details";
-
-    let contractSummaryHtml = '';
+    let signature = '';
     if (needsContract) {
-      contractSummaryHtml = `
-        <div class="summary-section" style="margin-top: 20px; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 20px;">
-            <h4>Signed Agreement</h4>
-            <p><strong>Status:</strong> <span style="color: var(--success); font-weight: 700;">✅ Contract & Waiver Signed</span></p>
-            <p><strong>Digital Signature:</strong> ${bk.signatureName} (Signed ${bk.signatureDate})</p>
-            <p style="font-size: 0.85em; color: var(--text-muted); margin-top: 4px;">Includes Underground Marking & Damage Waiver Agreement</p>
-        </div>
-      `;
+        const agreeEl = document.getElementById('contract-agree');
+        const sigEl = document.getElementById('contract-signature');
+        if (!agreeEl.checked || !sigEl.value.trim()) {
+            this.showToast('Please accept the waiver and sign your name', 'warning');
+            return;
+        }
+        signature = sigEl.value.trim();
     }
-    
-    content.innerHTML = `
-        <div class="booking-step-header">
-            <button class="btn btn-text" onclick="${backAction}">${backText}</button>
-            <h3>Review & Submit Request</h3>
-        </div>
-        <div class="summary-card">
-            <div class="summary-section">
-                <h4>Service Details</h4>
-                <p><strong>Service:</strong> ${service.name}</p>
-                <p><strong>Requested Date:</strong> ${bk.date} <span style="background: rgba(245,158,11,0.15); color: #b45309; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; font-weight: 600;">Subject to Confirmation</span></p>
-                <p><strong>Preferred Time:</strong> ${bk.time}</p>
-                <p><strong>Est. Duration:</strong> ${service.duration} min</p>
-                <p><strong>Est. Price:</strong> $${service.price}</p>
-            </div>
-            <div class="summary-section" style="margin-top: 20px; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 20px;">
-                <h4>Customer & Property Info</h4>
-                <p><strong>Name:</strong> ${bk.customerName}</p>
-                <p><strong>Email:</strong> ${bk.customerEmail}</p>
-                <p><strong>Phone:</strong> ${bk.customerPhone}</p>
-                <p><strong>Property Address:</strong> ${bk.customerAddress}</p>
-            </div>
-            ${contractSummaryHtml}
-        </div>
-        <button class="btn btn-primary btn-full btn-large" style="margin-top:20px" onclick="window.BookProApp.handleBookingSubmit()">Submit Booking Request →</button>
-    `;
-  },
 
-  handleBookingSubmit() {
-    const bk = window.BookProBooking.currentBooking;
-    const service = window.BookProServices.getById(bk.serviceId);
-    const needsContract = service ? !!service.requiresContract : false;
-    
-    const newBooking = window.BookProBooking.create({
+    // Disable the submit button to prevent double-clicks
+    const btn = document.getElementById('submit-booking-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+    }
+
+    // Build the booking record
+    const bookingData = {
         serviceId: service.id,
         serviceName: service.name,
         servicePrice: service.price,
         serviceDuration: service.duration,
-        date: bk.date,
-        time: bk.time,
-        customerName: bk.customerName,
-        customerEmail: bk.customerEmail,
-        customerPhone: bk.customerPhone,
-        customerAddress: bk.customerAddress,
-        signatureName: needsContract ? bk.signatureName : 'N/A (Not Required)',
-        signatureDate: needsContract ? bk.signatureDate : null,
-        contractAgreed: needsContract
-    });
-    
-    // Send Email notification to owner
-    this.sendEmailNotification(newBooking);
-    
-    this.renderConfirmation(newBooking);
+        date: date,
+        time: time,
+        customerName: name,
+        customerEmail: email || 'Not provided',
+        customerPhone: phone,
+        customerAddress: address,
+        notes: notes || 'None',
+        signatureName: needsContract ? signature : 'N/A',
+        contractAgreed: needsContract,
+        status: 'pending'
+    };
+
+    // Save locally
+    const newBooking = window.BookProBooking.create(bookingData);
+
+    // Send real email via Formsubmit.co
+    this.sendBookingEmail(bookingData, newBooking);
   },
 
-  sendEmailNotification(booking) {
-    const email = localStorage.getItem('bookpro_owner_email') || this.ownerEmail;
+  sendBookingEmail(data, booking) {
+    const ownerEmail = localStorage.getItem('bookpro_owner_email') || this.ownerEmail;
 
-    const message = `🌿 BOOK JT LANDSCAPING - NEW SERVICE REQUEST!\n\n` +
-      `Service: ${booking.serviceName}\n` +
-      `Requested Date: ${booking.date} at ${booking.time}\n` +
-      `Price: $${booking.servicePrice}\n\n` +
-      `CUSTOMER INFO:\n` +
-      `Name: ${booking.customerName}\n` +
-      `Email: ${booking.customerEmail}\n` +
-      `Phone: ${booking.customerPhone}\n` +
-      `Property Address: ${booking.customerAddress || 'N/A'}\n\n` +
-      `CONTRACT / WAIVER:\n` +
-      `Signed: ${booking.contractAgreed ? `YES (${booking.signatureName})` : 'N/A (Standard Service)'}`;
+    const formData = new FormData();
+    formData.append('name', data.customerName);
+    formData.append('email', data.customerEmail);
+    formData.append('phone', data.customerPhone);
+    formData.append('_subject', `🌿 NEW BOOKING: ${data.serviceName} - ${data.customerName}`);
+    formData.append('Service', data.serviceName);
+    formData.append('Price', `$${data.servicePrice}`);
+    formData.append('Preferred Date', data.date);
+    formData.append('Preferred Time', data.time);
+    formData.append('Property Address', data.customerAddress);
+    formData.append('Notes', data.notes);
+    formData.append('Waiver Signed', data.contractAgreed ? `YES (${data.signatureName})` : 'Not required');
+    formData.append('_captcha', 'false');
+    formData.append('_template', 'table');
 
-    console.log(`Notification logged for ${email}:\n`, message);
+    fetch(`https://formsubmit.co/ajax/${ownerEmail}`, {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(response => {
+      console.log('Email sent:', response);
+      this.renderConfirmation(booking);
+    })
+    .catch(err => {
+      console.error('Email send error:', err);
+      // Still show confirmation even if email fails
+      this.renderConfirmation(booking);
+    });
   },
 
   renderConfirmation(booking) {
     this.currentPage = 'confirmation';
     document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
-    
-    const email = localStorage.getItem('bookpro_owner_email') || this.ownerEmail;
-
-    const emailSubject = encodeURIComponent(`🌿 NEW BOOKING: ${booking.serviceName} - ${booking.customerName}`);
-    const emailBody = encodeURIComponent(
-      `🌿 BOOK JT LANDSCAPING SERVICE REQUEST\n\n` +
-      `Service: ${booking.serviceName}\n` +
-      `Date/Time: ${booking.date} around ${booking.time}\n` +
-      `Price: $${booking.servicePrice}\n\n` +
-      `CUSTOMER DETAILS:\n` +
-      `Name: ${booking.customerName}\n` +
-      `Email: ${booking.customerEmail}\n` +
-      `Phone: ${booking.customerPhone}\n` +
-      `Property Address: ${booking.customerAddress || 'N/A'}\n\n` +
-      `CONTRACT & WAIVER:\n` +
-      `Signed: ${booking.contractAgreed ? `YES (${booking.signatureName})` : 'N/A (Standard Service)'}`
-    );
-    const mailtoUrl = `mailto:${email}?subject=${emailSubject}&body=${emailBody}`;
 
     const pageEl = document.getElementById('page-confirmation');
     if (pageEl) {
         pageEl.classList.add('active');
         pageEl.innerHTML = `
-            <div class="confirmation-content text-center">
-                <div class="success-icon" style="font-size: 5rem; margin-bottom: 20px;">🌿</div>
-                <h2>Service Request Submitted!</h2>
-                <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 1.05rem;">
-                    Thank you, <strong>${booking.customerName}</strong>. Your request for <strong>${booking.serviceName}</strong> on <strong>${booking.date} around ${booking.time}</strong> has been received!
+            <div class="confirmation-content text-center" style="padding-top: 100px;">
+                <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 2.5rem;">✅</div>
+                <h2 style="margin-bottom: 12px;">Request Received!</h2>
+                <p style="color: var(--text-secondary); font-size: 1.05rem; max-width: 480px; margin: 0 auto 28px; line-height: 1.5;">
+                    Thank you, <strong>${booking.customerName}</strong>. Your request for <strong>${booking.serviceName}</strong> on <strong>${booking.date}</strong> has been sent to us.
                 </p>
                 
-                <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); padding: 20px; border-radius: var(--radius-lg); margin: 24px auto; max-width: 540px; text-align: center; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);">
-                    <p style="margin-bottom: 8px; font-weight: 700; color: #4338ca; font-size: 1.1rem;">📧 1-Tap Email Booking Details to Owner:</p>
-                    <p style="font-size: 0.92em; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
-                        Tap below to open your email app with pre-filled details ready to send directly to <strong>${email}</strong>:
+                <div style="background: #f8fafc; border: 1px solid var(--glass-border); padding: 20px; border-radius: var(--radius-md); max-width: 440px; margin: 0 auto 28px; text-align: left;">
+                    <p style="font-weight: 600; margin-bottom: 10px;">📞 What happens next?</p>
+                    <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.5;">
+                        We will call or text you at <strong>${booking.customerPhone}</strong> to confirm your appointment date and arrival window.
                     </p>
-                    <a href="${mailtoUrl}" class="btn btn-primary btn-full btn-large" style="text-decoration: none; font-size: 1.1rem; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);">
-                        📧 Send Email Notification to ${email} →
-                    </a>
                 </div>
 
-                <div style="background: #f8fafc; border: 1px solid var(--glass-border); padding: 20px; border-radius: var(--radius-md); margin: 20px auto 30px; max-width: 540px; text-align: left;">
-                    <p style="margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">📅 Schedule Note:</p>
-                    <p style="font-size: 0.9em; color: var(--text-secondary);">We will review our daily property routes and contact you at <strong>${booking.customerPhone}</strong> to confirm your final arrival window.</p>
-                    
-                    <p style="margin-top: 12px; margin-bottom: 4px; font-weight: 600; color: #b45309;">🚩 Flagging Reminder:</p>
-                    <p style="font-size: 0.88em; color: var(--text-secondary);">Please remember to plant flags/markers on any sprinkler heads, invisible dog fences, or underground lines prior to service day.</p>
-                </div>
-
-                <button class="btn btn-secondary" onclick="window.BookProApp.navigateTo('home')">Return Home</button>
+                <button class="btn btn-primary" onclick="window.BookProApp.navigateTo('home')">Back to Home</button>
             </div>
         `;
     }
-    this.showToast('Request submitted successfully!', 'success');
+    this.showToast('Request submitted!', 'success');
   },
   
+  // ============================
+  // ADMIN
+  // ============================
+
   renderAdmin() {
     const loginSection = document.getElementById('admin-login-section');
     const dashboardSection = document.getElementById('admin-dashboard-section');
@@ -585,10 +399,9 @@ window.BookProApp = {
         if(logoutBtn) logoutBtn.style.display = 'inline-flex';
         window.BookProAdmin.renderDashboard();
         
-        // Setup tabs if not already done
+        // Setup tabs
         const tabBtns = document.querySelectorAll('.admin-tab');
         tabBtns.forEach(btn => {
-            // Remove existing listener to prevent duplicates
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
@@ -607,7 +420,6 @@ window.BookProApp = {
             });
         });
         
-        // Show default tab (services)
         const servicesEl = document.getElementById('admin-services-container');
         const bookingsEl = document.getElementById('admin-bookings-container');
         const settingsEl = document.getElementById('admin-settings-container');
