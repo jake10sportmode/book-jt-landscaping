@@ -341,7 +341,7 @@ window.BookProAdmin = {
                     <hr style="margin: 10px 0; border: none; border-top: 1px solid #e2e8f0;">
                     <p style="color: #b45309; font-weight: 700;">⚠️ Aeration & Underground Object Marking Clause:</p>
                     <p style="color: #92400e; font-size: 0.88em;">
-                        Customer MUST plant flags on all sprinkler heads, valve boxes, invisible dog fences, and shallow utility lines. Book JT Landscaping is NOT responsible for damages to unmarked items; repair costs for unmarked items are customer liability.
+                        Customer MUST plant flags on all sprinkler heads, valve boxes, invisible dog fences, and shallow utility lines. JT Landscaping is NOT responsible for damages to unmarked items; repair costs for unmarked items are customer liability.
                     </p>
                 </div>
 

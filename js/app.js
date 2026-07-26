@@ -116,7 +116,7 @@ window.BookProApp = {
         <h3 class="service-title">${service.name}</h3>
         <p class="service-desc">${service.description}</p>
         <div class="service-details">
-            <span class="service-price">$${service.price}</span>
+            <span class="service-price">Starting at $${service.price}</span>
         </div>
         <button class="btn btn-primary btn-full book-btn" onclick="window.BookProApp.navigateTo('booking', {serviceId: '${service.id}'})">Book Now</button>
       </div>
@@ -139,7 +139,7 @@ window.BookProApp = {
             <div style="background: ${service.color}20; color: ${service.color}; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">${service.icon}</div>
             <div>
                 <strong style="font-size: 1.1rem;">${service.name}</strong>
-                <div style="color: var(--text-secondary); font-size: 0.95rem;">$${service.price}</div>
+                <div style="color: var(--text-secondary); font-size: 0.95rem;">Starting at $${service.price}</div>
             </div>
         </div>
 
@@ -169,7 +169,7 @@ window.BookProApp = {
                 <p style="font-weight: 700; color: #b45309; margin-bottom: 8px;">⚠️ Property Marking Required</p>
                 <p style="font-size: 0.88rem; color: #92400e; line-height: 1.5; margin-bottom: 12px;">
                     You <strong>must plant flags</strong> on all sprinkler heads, invisible dog fences, underground wiring, and utility lines <strong>before service day</strong>. 
-                    Book JT Landscaping is not responsible for damage to unmarked items. All repair costs for unmarked items are the customer's responsibility.
+                    JT Landscaping is not responsible for damage to unmarked items. All repair costs for unmarked items are the customer's responsibility.
                 </p>
                 <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.92rem; margin-bottom: 10px;">
                     <input type="checkbox" id="contract-agree" required style="width: 20px; height: 20px; margin-top: 2px; accent-color: #b45309; flex-shrink: 0;">
@@ -238,7 +238,7 @@ window.BookProApp = {
     formData.append('phone', data.customerPhone);
     formData.append('_subject', `🌿 NEW BOOKING: ${data.serviceName} - ${data.customerName}`);
     formData.append('Service', data.serviceName);
-    formData.append('Price', `$${data.servicePrice}`);
+    formData.append('Price', `Starting at $${data.servicePrice}`);
     formData.append('Property Address', data.customerAddress);
     formData.append('Waiver Signed', data.contractAgreed ? `YES (${data.signatureName})` : 'Not required');
     formData.append('_captcha', 'false');
