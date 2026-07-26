@@ -118,7 +118,7 @@ window.BookProApp = {
         <div class="service-details">
             <span class="service-price">Starting at $${service.price}</span>
         </div>
-        <button class="btn btn-primary btn-full book-btn" onclick="window.BookProApp.navigateTo('booking', {serviceId: '${service.id}'})">Book Now for a Free Quote</button>
+        <button class="btn btn-primary btn-full book-btn" onclick="window.BookProApp.navigateTo('booking', {serviceId: '${service.id}'})">Click here to request a free quote</button>
       </div>
     `;
   },
